@@ -1,12 +1,3 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>График работы</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
 <?php
 require_once __DIR__ . '/../includes/db.php';
 
@@ -39,6 +30,15 @@ $schedules = $stmt->fetchAll();
 
 $days = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
 ?>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>График работы</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
 <div class="container">
     <header>
