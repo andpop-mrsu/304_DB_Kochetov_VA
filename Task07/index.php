@@ -1,3 +1,106 @@
+<?php
+/**
+ * Web Application: Barbershop Completed Works Report
+ * Displays completed works with master filtering using dropdown
+ * Uses alternative PHP syntax without echo statements
+ */
+
+// Database connection
+define('DB_PATH', __DIR__ . '/../Task06/barbershop.db');
+
+/**
+ * Connect to SQLite database using PDO
+ */
+function connectDatabase(): PDO {
+    try {
+        $pdo = new PDO('sqlite:' . DB_PATH);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        return $pdo;
+    } catch (PDOException $e) {
+        die("Database connection failed: " . $e->getMessage());
+    }
+}
+
+/**
+ * Get all masters from database
+ */
+function getAllMasters(PDO $pdo): array {
+    $stmt = $pdo->query("
+        SELECT id, last_name, first_name 
+        FROM masters 
+        WHERE is_active = 1 
+        ORDER BY last_name, first_name
+    ");
+    return $stmt->fetchAll();
+}
+
+/**
+ * Get completed works with optional master filter
+ */
+function getCompletedWorks(PDO $pdo, ?int $masterId = null): array {
+    $sql = "
+        SELECT 
+            m.id AS master_id,
+            m.last_name || ' ' || m.first_name AS master_name,
+            cw.completion_date,
+            s.name AS service_name,
+            cw.price
+        FROM completed_works cw
+        INNER JOIN masters m ON cw.master_id = m.id
+        INNER JOIN services s ON cw.service_id = s.id
+    ";
+    
+    if ($masterId !== null):
+        $sql .= " WHERE m.id = :master_id";
+    endif;
+    
+    $sql .= " ORDER BY m.last_name, m.first_name, cw.completion_date";
+    
+    $stmt = $pdo->prepare($sql);
+    
+    if ($masterId !== null):
+        $stmt->bindValue(':master_id', $masterId, PDO::PARAM_INT);
+    endif;
+    
+    $stmt->execute();
+    return $stmt->fetchAll();
+}
+
+/**
+ * Calculate total revenue
+ */
+function calculateTotal(array $works): float {
+    return array_sum(array_column($works, 'price'));
+}
+
+// ============================================================================
+// Main logic
+// ============================================================================
+
+$pdo = connectDatabase();
+$masters = getAllMasters($pdo);
+
+// Get selected master ID from GET parameter
+$selectedMasterId = null;
+$selectedMasterName = 'Все мастера';
+
+if (isset($_GET['master_id']) && $_GET['master_id'] !== ''):
+    $selectedMasterId = (int)$_GET['master_id'];
+    
+    // Find selected master name
+    foreach ($masters as $master):
+        if ($master['id'] === $selectedMasterId):
+            $selectedMasterName = $master['last_name'] . ' ' . $master['first_name'];
+            break;
+        endif;
+    endforeach;
+endif;
+
+// Get completed works
+$works = getCompletedWorks($pdo, $selectedMasterId);
+$totalRevenue = calculateTotal($works);
+?>
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -233,15 +336,6 @@
     </style>
 </head>
 <body>
-<?php
-/**
- * Web Application: Barbershop Completed Works Report
- * Displays completed works with master filtering using dropdown
- * Uses alternative PHP syntax without echo statements
- */
-
-// Database connection
-define('DB_PATH', __DIR__ . '/../Task06/barbershop.db');
 
 /**
  * Connect to SQLite database using PDO
